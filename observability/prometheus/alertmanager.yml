@@ -1,0 +1,8 @@
+global:
+  resolve_timeout: 1m
+route:
+  receiver: local-null
+  group_wait: 10s
+receivers:
+  - name: local-null
+# Explicitly no notification channel configured: firing alerts are local evidence only.

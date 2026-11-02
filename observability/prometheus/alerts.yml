@@ -1,0 +1,31 @@
+groups:
+  - name: sre-service-alerts
+    rules:
+      - alert: SREGatewayUnavailable
+        expr: up{job="gateway"} == 0
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gateway metrics endpoint unavailable"
+      - alert: SRECheckoutErrorRate
+        expr: |
+          sum(rate(sre_http_requests_total{service="gateway",path="/checkout",status=~"5.."}[2m]))
+          /
+          clamp_min(sum(rate(sre_http_requests_total{service="gateway",path="/checkout"}[2m])), 0.001)
+          > 0.05
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Checkout error rate exceeds 5%"
+      - alert: SRECheckoutLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(sre_http_request_duration_seconds_bucket{service="gateway",path="/checkout"}[5m])))
+          > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Checkout p95 latency greater than 1 second"
