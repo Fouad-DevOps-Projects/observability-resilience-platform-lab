@@ -64,8 +64,8 @@ spec:
             - {name: http, containerPort: 3200}
             - {name: otlp, containerPort: 4318}
           resources:
-            requests: {cpu: 80m, memory: 160Mi}
-            limits: {cpu: 350m, memory: 384Mi}
+            requests: {cpu: 80m, memory: 384Mi}
+            limits: {cpu: 350m, memory: 1Gi}
           volumeMounts:
             - {name: config, mountPath: /etc/traces}
             - {name: data, mountPath: /var/tempo}
