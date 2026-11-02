@@ -43,3 +43,46 @@ curl http://localhost:8000/checkout
 - Alertmanager: http://localhost:9093
 
 See [experiments and evidence plan](docs/experiments.md) after the initial implementation is added. Do not publish screenshots or results from an untested deployment as though verified.
+
+---
+
+## Observability and Resilience Evidence
+
+The platform implements centralized logs, distributed tracing,
+application SLO measurements, and automated Prometheus alerts.
+
+### Healthy checkout dashboard
+
+![Healthy SLO dashboard](docs/evidence/01-healthy-slo-dashboard.png)
+
+### Distributed tracing
+
+![Gateway to downstream trace](docs/evidence/02-distributed-tracing.png)
+
+### Log-to-trace correlation
+
+![Loki and Tempo correlation](docs/evidence/03-log-trace-correlation.png)
+
+### Failure injection and SLO degradation
+
+![Checkout availability during failure](docs/evidence/04-checkout-failure.png)
+
+### Alert transitions
+
+| Pending | Firing |
+|---|---|
+| ![Pending](docs/evidence/05-alert-pending.png) | ![Firing](docs/evidence/06-alert-firing.png) |
+
+### Recovery
+
+![Checkout recovery](docs/evidence/07-recovery.png)
+
+### Reproducible configuration
+
+- [Grafana SLO dashboard](grafana/dashboards/checkout-slo-dashboard.json)
+- [Prometheus alert rules](kubernetes/slo/checkout-rules.yaml)
+- [Loki and Alloy manifests](kubernetes/logging/)
+- [Incident response report](docs/incidents/incident-report.md)
+
+> The experiment demonstrated Prometheus alert evaluation
+> and recovery. External Alertmanager notifications were not tested.

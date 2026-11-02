@@ -1,0 +1,82 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sre-checkout-slo
+  namespace: monitoring
+  labels:
+    release: monitoring
+    app.kubernetes.io/part-of: sre-lab
+spec:
+  groups:
+    - name: sre.checkout.slo
+      interval: 30s
+      rules:
+        - record: sre:checkout:requests:rate5m
+          expr: |
+            sum(rate(sre_http_requests_total{
+              exported_service="gateway",path="/checkout"
+            }[5m]))
+
+        - record: sre:checkout:errors:rate5m
+          expr: |
+            sum(rate(sre_http_requests_total{
+              exported_service="gateway",path="/checkout",status=~"5.."
+            }[5m])) or vector(0)
+
+        - record: sre:checkout:availability:ratio5m
+          expr: |
+            1 -
+            (
+              sre:checkout:errors:rate5m
+              /
+              sre:checkout:requests:rate5m
+            )
+
+        - record: sre:checkout:latency:p95_seconds5m
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by (le) (
+                rate(sre_http_request_duration_seconds_bucket{
+                  exported_service="gateway",path="/checkout"
+                }[5m])
+              )
+            )
+
+        - alert: SRECheckoutHighErrorRate
+          expr: |
+            (
+              sre:checkout:availability:ratio5m < 0.995
+            )
+            and
+            (
+              sum(increase(sre_http_requests_total{
+                exported_service="gateway",path="/checkout"
+              }[5m])) >= 10
+            )
+          for: 2m
+          labels:
+            severity: warning
+            service: sre-gateway
+          annotations:
+            summary: "Checkout availability below 99.5%"
+            description: "Checkout HTTP 5xx error budget exceeded for at least 2 minutes."
+
+        - alert: SRECheckoutHighLatency
+          expr: |
+            (
+              sre:checkout:latency:p95_seconds5m > 0.5
+            )
+            and
+            (
+              sum(increase(sre_http_requests_total{
+                exported_service="gateway",path="/checkout"
+              }[5m])) >= 10
+            )
+          for: 2m
+          labels:
+            severity: warning
+            service: sre-gateway
+          annotations:
+            summary: "Checkout p95 latency exceeds 500ms"
+            description: "Checkout p95 response time has exceeded 500ms for at least 2 minutes."
