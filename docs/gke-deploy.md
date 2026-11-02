@@ -1,36 +1,46 @@
-# Reusing the existing GKE cluster
+# Validated GKE deployment
 
-This file documents a **planned** deployment, not successful execution.
+The observability platform was deployed on the existing single-node `portfolio-gke` GKE cluster in `me-central1-a`. The original gateway/downstream/Tempo/OTEL resources were reconciled by the `sre-lab` Argo CD Application. The logging and secret resources were originally applied with `kubectl`; the new [add-on Argo Applications](../argocd/addons.yaml) require explicit, safe adoption ([runbook](gitops-adoption.md)).
 
 ## Prerequisites
 
-- Confirm the new GitHub Actions image publishing job succeeds before applying the Argo CD application.
-- A GHCR image may be private; create the `ghcr-pull` Docker Registry Secret in namespace `sre-lab` with credentials that can read this package. Never commit the credential.
-- Existing Argo CD, Prometheus and Grafana stay in their original namespaces.
+- Access to the GKE context and Argo CD with sufficient permissions.
+- Monitoring stack (Prometheus Operator, Prometheus, Grafana and Alertmanager).
+- External Secrets Operator installed, GCP Secret Manager API enabled, an existing `sre-ghcr-dockerconfig` secret, and properly scoped Workload Identity IAM binding for `sre-lab/sre-secret-reader`.
+- GitHub Actions publishes the API image to GHCR. `ghcr-pull` must resolve before starting the private-image workloads. Never store Docker auth JSON in the repository.
 
-## Deploy
+## Deploy / inspect
 
 ```bash
-kubectl create namespace sre-lab --dry-run=client -o yaml | kubectl apply -f -
-# Securely create ghcr-pull first; keep its contents out of Git and shell history.
-kubectl apply -f argocd/sre-lab.yaml
 kubectl get applications -n argocd
 kubectl get pods,svc -n sre-lab
-kubectl get servicemonitors -n sre-lab
-kubectl top node
+kubectl get servicemonitor -n sre-lab
+kubectl get secretstore,externalsecret -n sre-lab
+kubectl get prometheusrule sre-checkout-slo -n monitoring
 ```
 
-The four Phase-1 Pods request a total of 250m CPU and 420Mi memory. Their combined limits are 1150m CPU and 1152Mi memory. The node previously showed overcommitted limits, so watch OOMKill and scheduling failures. No external LoadBalancer and no PVC is requested.
+On a fresh cluster, satisfy the prerequisites, create `sre-lab`, create/configure the Secret Manager reader identity, reconcile `ghcr-pull`, and only then install [`argocd/sre-lab.yaml`](../argocd/sre-lab.yaml). Follow [GitOps adoption](gitops-adoption.md) for the existing logging/secrets/SLO add-ons; do not simultaneously hand ownership to multiple Applications.
 
-## Validate
+## Verify endpoints and SLOs
 
 ```bash
-kubectl port-forward -n sre-lab svc/sre-gateway 8000:8000
-# In a second terminal:
-curl -i http://localhost:8000/checkout
-curl -s http://localhost:8000/metrics | grep sre_http_requests_total
+kubectl port-forward -n sre-lab svc/sre-gateway 8085:8000
+# Second terminal:
+curl -i http://localhost:8085/checkout
+curl -s http://localhost:8085/metrics | grep sre_http_requests_total
 ```
 
-Look for the `sre-lab/sre-apis` ServiceMonitor in Prometheus Targets. For Tempo, add the Grafana datasource URL `http://sre-tempo.sre-lab.svc.cluster.local:3200`, then verify gateway and downstream spans from the same trace.
+The Grafana Tempo data source is `http://sre-tempo.sre-lab.svc.cluster.local:3200`; the Loki data source is `http://sre-loki.sre-lab.svc.cluster.local:3100`. Both are private Kubernetes Services. Verify Prometheus ServiceMonitor targets and recording rules. Prometheus stores the app's service label as `exported_service`.
 
-**Data retention:** Tempo uses `emptyDir`, so traces disappear after Pod recreation. This is a small educational lab, not production HA. Capture real screenshots and sanitized CLI outputs before teardown.
+## Verified lab outcomes
+
+- A two-service, nine-span checkout trace and matching Loki trace ID.
+- Availability, error-rate, latency and throughput dashboard.
+- Controlled downstream outage: availability 14.3%, 5xx 85.7%; Prometheus alert Pending → Firing, followed by recovery.
+- Tempo OOM (exit 137) corrected through GitOps by increasing memory limit to 1Gi.
+
+See [the incident report](incidents/incident-report.md) and [screenshot gallery](../README.md#incident-drill-detect--respond--recover).
+
+## Operational limits
+
+Tempo and Loki use `emptyDir` and lose local data upon Pod replacement. The cluster uses a single worker and is *not* production-grade high availability. No external Alertmanager notification was verified. The cloud cluster incurs costs until explicitly destroyed; capture evidence before cleanup.

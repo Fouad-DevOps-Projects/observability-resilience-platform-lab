@@ -1,0 +1,46 @@
+# Review docs/gitops-adoption.md before applying.
+# No automated sync, pruning, or self-healing is enabled for these add-on Applications.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sre-logging
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Fouad-DevOps-Projects/observability-resilience-platform-lab.git
+    targetRevision: main
+    path: kubernetes/logging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sre-lab
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sre-secrets
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Fouad-DevOps-Projects/observability-resilience-platform-lab.git
+    targetRevision: main
+    path: kubernetes/secrets
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sre-lab
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sre-slo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Fouad-DevOps-Projects/observability-resilience-platform-lab.git
+    targetRevision: main
+    path: kubernetes/slo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring

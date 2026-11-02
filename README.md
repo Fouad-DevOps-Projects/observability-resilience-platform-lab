@@ -1,88 +1,103 @@
-# Observability & Resilience Platform Lab
+# 🔭 Observability & Resilience Platform
 
-A hands-on SRE portfolio project for **metrics, structured logs, distributed tracing, load testing, service-level objectives and controlled failure recovery**.
+**From a successful checkout to a failing dependency, a firing SLO alert, and a verified recovery — on a real GKE cluster.**
 
-**Status:** Initial implementation committed; real deployments, dashboards and failure tests must be validated before claiming success.
+[![Platform](https://img.shields.io/badge/Platform-Google%20Kubernetes%20Engine-4285F4?logo=googlecloud&logoColor=white)](#architecture)
+[![GitOps](https://img.shields.io/badge/GitOps-Argo%20CD-EF7B4D)](#gitops-delivery)
+[![Signals](https://img.shields.io/badge/Observability-Metrics%20%7C%20Logs%20%7C%20Traces-239EAB)](#observability-in-action)
+[![Reliability](https://img.shields.io/badge/Resilience-Incident%20Reproduced%20%26%20Recovered-238636)](#incident-drill)
 
-## Goal
+> **Scope:** A verified, single-node **portfolio lab**, not a highly available production platform. The figures below are **observed test-window results**, not long-term service guarantees.
 
-Build two Python FastAPI services and observe a request end to end using Prometheus, Grafana, Loki, Tempo, OpenTelemetry and k6. Use Docker Compose locally to avoid cloud charges.
+## At a glance
+
+| SRE capability | Verified outcome |
+|---|---|
+| **Golden signals** | Checkout availability, 5xx rate, p95 latency and request throughput |
+| **Distributed tracing** | End-to-end `gateway → downstream` trace in Tempo (2 services, 9 spans) |
+| **Log correlation** | Same trace ID found in Loki and Tempo |
+| **Incident detection** | `SRECheckoutHighErrorRate` observed **Pending → Firing** |
+| **Controlled outage** | Checkout availability **14.3%**, HTTP 5xx **85.7%** in a sampled 5-minute window |
+| **Recovery** | HTTP 200; checkout availability **100%**, 5xx **0%** after recovery |
+| **Troubleshooting** | Tempo OOMKilled (exit 137), remediated by increasing memory limit from 384Mi to 1Gi |
+| **Security** | Private GHCR pull secret sourced from GCP Secret Manager via External Secrets and Workload Identity |
+
+## Incident drill: detect → respond → recover
+
+| Healthy baseline | Degraded checkout |
+|---|---|
+| ![Healthy SLO](docs/evidence/01-healthy-slo-dashboard.png) | ![Availability drops during controlled failure](docs/evidence/04-checkout-failure.png) |
+
+| Alert pending | Alert firing |
+|---|---|
+| ![Alert pending](docs/evidence/05-alert-pending.png) | ![Alert firing](docs/evidence/06-alert-firing.png) |
+
+![Checkout restored](docs/evidence/07-recovery.png)
+
+**What happened:** `FORCE_FAILURE=true` on the downstream service triggered HTTP 503 at `/process`. The gateway propagated the dependency failure as HTTP 503 at `/checkout`. Prometheus recorded the checkout impact, evaluated a two-minute alert condition, and transitioned through Pending and Firing. Removing the injection restored successful checkouts and the alert resolved after the rolling window cleared.
+
+[Read the incident report](docs/incidents/incident-report.md) · [Review alert rules](kubernetes/slo/checkout-rules.yaml)
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Client[k6 / HTTP] --> API[Gateway FastAPI]
-  API --> Worker[Downstream FastAPI]
-  API --> Prom[Prometheus]
-  Worker --> Prom
-  API --> OTel[OTel Collector]
-  Worker --> OTel
-  OTel --> Tempo[Tempo]
-  API --> Alloy[Grafana Alloy]
-  Worker --> Alloy
+  Client[HTTP clients / load generation] --> Gateway[FastAPI Gateway]
+  Gateway --> Downstream[FastAPI Downstream]
+  Gateway & Downstream -->|/metrics| Prometheus[Prometheus]
+  Gateway & Downstream -->|OTLP traces| Collector[OpenTelemetry Collector]
+  Collector --> Tempo[Tempo]
+  Gateway & Downstream -->|Pod logs| Alloy[Grafana Alloy]
   Alloy --> Loki[Loki]
-  Prom --> Grafana[Grafana]
-  Tempo --> Grafana
-  Loki --> Grafana
-  Prom --> Alerts[Alertmanager]
+  Prometheus --> Rules[Recording and alert rules]
+  Rules --> Alertmanager[Alertmanager]
+  Prometheus & Loki & Tempo --> Grafana[Grafana]
 ```
 
-## Getting started
+**Infrastructure:** Google Kubernetes Engine; Argo CD for reconciliation; GHCR for the API image; External Secrets Operator + GCP Secret Manager + Workload Identity for the image-pull secret. Prometheus, Grafana and Alertmanager are reused from the existing monitoring installation.
 
-```bash
-docker compose up -d --build
-docker compose ps
-curl http://localhost:8000/health/ready
-curl http://localhost:8000/checkout
-```
+## Observability in action
 
-- Gateway: http://localhost:8000
-- Grafana: http://localhost:3000 (local lab initial credentials: admin / admin)
-- Prometheus: http://localhost:9090
-- Alertmanager: http://localhost:9093
-
-See [experiments and evidence plan](docs/experiments.md) after the initial implementation is added. Do not publish screenshots or results from an untested deployment as though verified.
-
----
-
-## Observability and Resilience Evidence
-
-The platform implements centralized logs, distributed tracing,
-application SLO measurements, and automated Prometheus alerts.
-
-### Healthy checkout dashboard
-
-![Healthy SLO dashboard](docs/evidence/01-healthy-slo-dashboard.png)
-
-### Distributed tracing
-
-![Gateway to downstream trace](docs/evidence/02-distributed-tracing.png)
-
-### Log-to-trace correlation
-
-![Loki and Tempo correlation](docs/evidence/03-log-trace-correlation.png)
-
-### Failure injection and SLO degradation
-
-![Checkout availability during failure](docs/evidence/04-checkout-failure.png)
-
-### Alert transitions
-
-| Pending | Firing |
+| Two-service distributed trace | Same trace ID in structured logs |
 |---|---|
-| ![Pending](docs/evidence/05-alert-pending.png) | ![Firing](docs/evidence/06-alert-firing.png) |
+| ![Tempo trace](docs/evidence/02-distributed-tracing.png) | ![Loki correlation](docs/evidence/03-log-trace-correlation.png) |
 
-### Recovery
+The application exposes `sre_http_requests_total` and `sre_http_request_duration_seconds`. Its instrumented client calls send traces through the OTLP collector to Tempo. Grafana Alloy collects Kubernetes Pod logs into Loki. An actual trace ID was verified in **both** Loki and Tempo.
 
-![Checkout recovery](docs/evidence/07-recovery.png)
+**Prometheus label detail:** Due to target label collisions, the application's `service="gateway"` is stored as `exported_service="gateway"`. The committed SLO rules use the verified label.
 
-### Reproducible configuration
+**Lab SLO thresholds:** 99.5% server-side checkout availability, 5xx under 0.5%, p95 under 500 ms. These measure requests that reach the gateway; an absence of traffic is *not* evidence of 100% availability. Alerts require at least 10 checkout requests in five minutes and two minutes of sustained violation.
 
-- [Grafana SLO dashboard](grafana/dashboards/checkout-slo-dashboard.json)
-- [Prometheus alert rules](kubernetes/slo/checkout-rules.yaml)
-- [Loki and Alloy manifests](kubernetes/logging/)
-- [Incident response report](docs/incidents/incident-report.md)
+## GitOps delivery
 
-> The experiment demonstrated Prometheus alert evaluation
-> and recovery. External Alertmanager notifications were not tested.
+| Git-managed configuration | Path | Deployment |
+|---|---|---|
+| Gateway, downstream, Tempo, OTEL, ServiceMonitor | [`kubernetes/phase1`](kubernetes/phase1/) | Argo CD `sre-lab` |
+| Loki, Alloy, namespace-scoped RBAC | [`kubernetes/logging`](kubernetes/logging/) | Argo CD `sre-logging` (optional adoption) |
+| SecretStore, ExternalSecret, reader ServiceAccount | [`kubernetes/secrets`](kubernetes/secrets/) | Argo CD `sre-secrets` (optional adoption) |
+| Recording rules and SLO alerts | [`kubernetes/slo`](kubernetes/slo/) | Argo CD `sre-slo` (optional adoption) |
+
+**Important:** The three add-on Argo CD Applications are **defined in Git, not automatically installed by this commit**. Logging, External Secrets and SLO rules were initially applied directly with `kubectl`. Use the [adoption runbook](docs/gitops-adoption.md) to verify prerequisites and safely hand ownership to Argo CD. The add-on Applications start with automated sync **disabled**, to avoid surprise recreation or pruning.
+
+### Reproduce
+
+1. Deploy the prerequisite **Prometheus Operator**, Argo CD, External Secrets Operator and configured GCP Secret Manager IAM/Workload Identity. Ensure the existing GHCR credentials remain **outside Git**.
+2. Build and publish the API image using [GitHub Actions](.github/workflows/ci.yml); verify access to the private GHCR image.
+3. Follow [GKE deployment](docs/gke-deploy.md) for the base app and [GitOps adoption](docs/gitops-adoption.md) for the add-ons.
+4. Import [Grafana dashboard (classic JSON)](grafana/dashboards/checkout-slo-dashboard.json). The [Grafana Dashboard API v2 resource](grafana/dashboards/checkout-slo-dashboard-v2.json) is also preserved.
+5. Reproduce the incident only in a disposable lab, following the rollback steps in the [incident report](docs/incidents/incident-report.md).
+
+**Local application development:** `docker compose up -d --build`, then `curl http://localhost:8000/checkout`. The GKE observability integration relies on the existing in-cluster monitoring stack; local Compose is not a substitute for the validated GKE exercise.
+
+## Engineering decisions & limitations
+
+- **Data persistence:** Tempo and Loki use `emptyDir`; Pod replacement can erase telemetry. No production retention guarantee or HA is claimed.
+- **Alerting:** Prometheus Pending/Firing/Resolved states were verified; **external Alertmanager notification delivery was not tested**.
+- **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling, load tests and cost/performance benchmarking remain future work.
+- **Resource safety:** Tempo's original 384Mi limit caused an actual OOM; the 1Gi remediation was deployed and verified.
+- **Security:** Loki is internal-only without authentication. Keep any port-forwards local, protect Grafana, and never commit registry or cloud credentials.
+- **Cloud cost:** The GKE cluster is billable until explicitly torn down; follow the infrastructure cleanup instructions when evidence collection is finished.
+
+## Project references
+
+[Deployment guide](docs/gke-deploy.md) · [Safe GitOps adoption](docs/gitops-adoption.md) · [Incident report](docs/incidents/incident-report.md) · [Original experiment plan](docs/experiments.md) · [Dashboard JSON](grafana/dashboards/checkout-slo-dashboard.json)
