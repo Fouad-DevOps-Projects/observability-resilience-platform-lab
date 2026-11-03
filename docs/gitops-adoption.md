@@ -1,5 +1,18 @@
 # Safely adopting the add-ons into Argo CD
 
+## Verified adoption result
+
+The existing GKE cluster successfully adopted all three add-on
+Applications. After manual synchronization, all five Applications
+were **Synced / Healthy**. Loki and Alloy remained running with
+zero restarts; ExternalSecret `ghcr-pull` remained `SecretSynced`
+and Ready.
+
+The configuration subsequently enables automatic reconciliation
+and self-healing, with automatic pruning disabled. The procedure
+below remains the safe process for a new cluster or fresh adoption.
+
+
 The base Argo CD Application [`sre-lab`](../argocd/sre-lab.yaml) reconciles only `kubernetes/phase1`. **Do not change its source path to `kubernetes/`**: the SLO objects belong in `monitoring`, the other resources in `sre-lab`, and some resources depend on separately installed CRDs.
 
 Three separate Applications in [`argocd/addons.yaml`](../argocd/addons.yaml) provide clear ownership:

@@ -68,16 +68,24 @@ The application exposes `sre_http_requests_total` and `sre_http_request_duration
 
 **Lab SLO thresholds:** 99.5% server-side checkout availability, 5xx under 0.5%, p95 under 500 ms. These measure requests that reach the gateway; an absence of traffic is *not* evidence of 100% availability. Alerts require at least 10 checkout requests in five minutes and two minutes of sustained violation.
 
+## GitOps: 5/5 Synced & Healthy
+
+![Five Argo CD Applications — all Synced and Healthy](docs/evidence/08-argocd-gitops-applications.png)
+
+**Verified on GKE:** All five Applications reached Synced / Healthy.
+The three SRE add-ons were adopted through reviewed, manual syncs
+without disrupting Loki, Alloy, or the application's running Pods.
+
 ## GitOps delivery
 
 | Git-managed configuration | Path | Deployment |
 |---|---|---|
 | Gateway, downstream, Tempo, OTEL, ServiceMonitor | [`kubernetes/phase1`](kubernetes/phase1/) | Argo CD `sre-lab` |
-| Loki, Alloy, namespace-scoped RBAC | [`kubernetes/logging`](kubernetes/logging/) | Argo CD `sre-logging` (optional adoption) |
-| SecretStore, ExternalSecret, reader ServiceAccount | [`kubernetes/secrets`](kubernetes/secrets/) | Argo CD `sre-secrets` (optional adoption) |
-| Recording rules and SLO alerts | [`kubernetes/slo`](kubernetes/slo/) | Argo CD `sre-slo` (optional adoption) |
+| Loki, Alloy, namespace-scoped RBAC | [`kubernetes/logging`](kubernetes/logging/) | Argo CD `sre-logging` (adopted and verified) |
+| SecretStore, ExternalSecret, reader ServiceAccount | [`kubernetes/secrets`](kubernetes/secrets/) | Argo CD `sre-secrets` (adopted and verified) |
+| Recording rules and SLO alerts | [`kubernetes/slo`](kubernetes/slo/) | Argo CD `sre-slo` (adopted and verified) |
 
-**Important:** The three add-on Argo CD Applications are **defined in Git, not automatically installed by this commit**. Logging, External Secrets and SLO rules were initially applied directly with `kubectl`. Use the [adoption runbook](docs/gitops-adoption.md) to verify prerequisites and safely hand ownership to Argo CD. The add-on Applications start with automated sync **disabled**, to avoid surprise recreation or pruning.
+**Verified adoption:** The logging, secrets and SLO Applications were initially synchronized manually after reviewing live-resource diffs. The desired configuration now enables automatic self-healing with `prune: false`. See the [adoption runbook](docs/gitops-adoption.md) for prerequisites and the controlled adoption procedure.
 
 ### Reproduce
 

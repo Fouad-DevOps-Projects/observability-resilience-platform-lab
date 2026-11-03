@@ -11,6 +11,10 @@ spec:
     repoURL: https://github.com/Fouad-DevOps-Projects/observability-resilience-platform-lab.git
     targetRevision: main
     path: kubernetes/logging
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
   destination:
     server: https://kubernetes.default.svc
     namespace: sre-lab
@@ -26,6 +30,10 @@ spec:
     repoURL: https://github.com/Fouad-DevOps-Projects/observability-resilience-platform-lab.git
     targetRevision: main
     path: kubernetes/secrets
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
   destination:
     server: https://kubernetes.default.svc
     namespace: sre-lab
@@ -41,6 +49,10 @@ spec:
     repoURL: https://github.com/Fouad-DevOps-Projects/observability-resilience-platform-lab.git
     targetRevision: main
     path: kubernetes/slo
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
