@@ -14,6 +14,8 @@ os.environ.pop("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", None)
 from gateway import app as gateway_app
 from downstream import app as downstream_app
 
+REAL_ASYNC_CLIENT = httpx.AsyncClient
+
 
 class FakeTransport(httpx.AsyncBaseTransport):
     def __init__(self, outcome):
@@ -26,11 +28,10 @@ class FakeTransport(httpx.AsyncBaseTransport):
 
 
 def patch_downstream(monkeypatch, response):
-    original_client = httpx.AsyncClient
     monkeypatch.setattr(
         httpx,
         "AsyncClient",
-        lambda **kwargs: original_client(transport=FakeTransport(response), **kwargs),
+        lambda **kwargs: REAL_ASYNC_CLIENT(transport=FakeTransport(response), **kwargs),
     )
 
 
