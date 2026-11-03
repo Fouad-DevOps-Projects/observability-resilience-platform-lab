@@ -68,6 +68,32 @@ The application exposes `sre_http_requests_total` and `sre_http_request_duration
 
 **Lab SLO thresholds:** 99.5% server-side checkout availability, 5xx under 0.5%, p95 under 500 ms. These measure requests that reach the gateway; an absence of traffic is *not* evidence of 100% availability. Alerts require at least 10 checkout requests in five minutes and two minutes of sustained violation.
 
+## Secrets Management & Cloud Security
+
+Private container registry credentials were managed **outside Git** using **Google Cloud Secret Manager**, the **External Secrets Operator (ESO)**, and **Workload Identity Federation for GKE**. The repository versions only the integration manifests—not the GHCR token, Docker authentication payload, or static Google Cloud service-account keys.
+
+```mermaid
+flowchart LR
+  SM[GCP Secret Manager: GHCR Docker auth] -->|authorized read| ESO[External Secrets Operator]
+  WI[GKE Workload Identity + IAM] -->|identity for reader| ESO
+  ESO -->|ExternalSecret sync| KS[Kubernetes imagePullSecret: ghcr-pull]
+  KS -->|private image pull| P[Gateway and downstream Pods]
+  Git[Git / Argo CD] -->|declarative manifests only| ESO
+```
+
+| Security control | Implemented mechanism |
+|---|---|
+| **Source of truth** | GCP Secret Manager secret `sre-ghcr-dockerconfig`; credential values were not committed |
+| **Identity** | Kubernetes ServiceAccount `sre-lab/sre-secret-reader` accessed GCP through Workload Identity; no static GCP key was stored in the manifests |
+| **Authorization** | GCP IAM access was configured separately from Git and must be scoped to the required secret when reproducing the lab |
+| **Synchronization** | `SecretStore` + `ExternalSecret` generated `sre-lab/ghcr-pull` as a `kubernetes.io/dockerconfigjson` Secret; configured refresh interval: **1 hour** |
+| **GitOps** | Argo CD `sre-secrets` managed the SecretStore, ExternalSecret and reader ServiceAccount definitions, without storing secret material |
+| **Verified outcome** | The `ghcr-pull` ExternalSecret reached **Ready / SecretSynced**, and the private GHCR image was successfully pulled by the GKE workloads |
+
+**Evidence:** [ExternalSecret and SecretStore manifests](kubernetes/secrets/ghcr-external-secret.yaml) · [Reader ServiceAccount](kubernetes/secrets/reader-serviceaccount.yaml) · [Verified adoption and IAM prerequisites](docs/gitops-adoption.md).
+
+**Lifecycle:** The GKE cluster was removed on 3 November 2026. The separately created Secret Manager entry remained at the time of the post-teardown inventory; its deletion or any associated GitHub token revocation must be verified independently.
+
 ## GitOps: 5/5 Synced & Healthy
 
 ![Five Argo CD Applications — all Synced and Healthy](docs/evidence/08-argocd-gitops-applications.png)
