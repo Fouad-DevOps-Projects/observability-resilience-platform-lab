@@ -1,6 +1,6 @@
 # Validated GKE deployment
 
-The observability platform was deployed on the existing single-node `portfolio-gke` GKE cluster in `me-central1-a`. The original gateway/downstream/Tempo/OTEL resources were reconciled by the `sre-lab` Argo CD Application. The logging and secret resources were originally applied with `kubectl`; the new [add-on Argo Applications](../argocd/addons.yaml) require explicit, safe adoption ([runbook](gitops-adoption.md)).
+The observability platform was deployed on the single-node `portfolio-gke` GKE cluster in `me-central1-a`. The shared lab was **decommissioned on 3 November 2026**, after its configuration, incident exercises and benchmark results were preserved. Terraform successfully destroyed the node pool and cluster; independent post-destroy checks showed empty GKE and Compute Engine resource lists. [Teardown record](https://github.com/Fouad-DevOps-Projects/cloud-native-infrastructure/blob/main/docs/evidence/gke/teardown/README.md). The original gateway/downstream/Tempo/OTEL resources were reconciled by the `sre-lab` Argo CD Application. The logging and secret resources were originally applied with `kubectl`; the new [add-on Argo Applications](../argocd/addons.yaml) require explicit, safe adoption ([runbook](gitops-adoption.md)).
 
 ## Prerequisites
 
@@ -43,4 +43,4 @@ See [the incident report](incidents/incident-report.md) and [screenshot gallery]
 
 ## Operational limits
 
-Tempo and Loki use `emptyDir` and lose local data upon Pod replacement. The cluster uses a single worker and is *not* production-grade high availability. No external Alertmanager notification was verified. The cloud cluster incurs costs until explicitly destroyed; capture evidence before cleanup.
+Tempo and Loki use `emptyDir` and lose local data upon Pod replacement. The cluster uses a single worker and is *not* production-grade high availability. No external Alertmanager notification was verified. The GKE lab was destroyed and independently verified on 3 November 2026. A separately created GCP Secret Manager secret remained outside that Terraform teardown; review it independently. A fresh deployment will incur new cloud costs.

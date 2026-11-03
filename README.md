@@ -7,7 +7,7 @@
 [![Signals](https://img.shields.io/badge/Observability-Metrics%20%7C%20Logs%20%7C%20Traces-239EAB)](#observability-in-action)
 [![Reliability](https://img.shields.io/badge/Resilience-Incident%20Reproduced%20%26%20Recovered-238636)](#incident-drill)
 
-> **Scope:** A verified, single-node **portfolio lab**, not a highly available production platform. The figures below are **observed test-window results**, not long-term service guarantees.
+> **Scope and lifecycle:** This verified, single-node GKE portfolio lab was decommissioned on **3 November 2026** after evidence collection. Terraform removed the node pool and cluster; independent checks found no remaining GKE cluster, VM or disk. The figures below are **historical observed test-window results**, not long-term service guarantees. [Teardown verification](https://github.com/Fouad-DevOps-Projects/cloud-native-infrastructure/blob/main/docs/evidence/gke/teardown/README.md).
 
 ## At a glance
 
@@ -134,7 +134,7 @@ The bounded k6 test targeted the live GKE checkout gateway through a port-forwar
 - **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling and GKE capacity benchmarking remain future work. CI smoke and bounded load tests were run against GKE: both 60-second benchmarks passed all four thresholds. Maximum-capacity and long-duration tests remain future work.
 - **Resource safety:** Tempo's original 384Mi limit caused an actual OOM; the 1Gi remediation was deployed and verified.
 - **Security:** Loki is internal-only without authentication. Keep any port-forwards local, protect Grafana, and never commit registry or cloud credentials.
-- **Cloud cost:** The GKE cluster is billable until explicitly torn down; follow the infrastructure cleanup instructions when evidence collection is finished.
+- **Cloud lifecycle:** GKE teardown was verified on 3 November 2026 ([evidence](https://github.com/Fouad-DevOps-Projects/cloud-native-infrastructure/blob/main/docs/evidence/gke/teardown/README.md)). The separate Secret Manager entry used for GHCR authentication remained at verification time and requires independent cleanup review; account-wide zero cost is not claimed.
 
 ## Project references
 
