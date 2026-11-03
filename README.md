@@ -92,7 +92,7 @@ flowchart LR
 
 **Evidence:** [ExternalSecret and SecretStore manifests](kubernetes/secrets/ghcr-external-secret.yaml) · [Reader ServiceAccount](kubernetes/secrets/reader-serviceaccount.yaml) · [Verified adoption and IAM prerequisites](docs/gitops-adoption.md).
 
-**Lifecycle:** The GKE cluster was removed on 3 November 2026. The separately created Secret Manager entry remained at the time of the post-teardown inventory; its deletion or any associated GitHub token revocation must be verified independently.
+**Lifecycle:** The GKE cluster was removed on 3 November 2026. The separately created Secret Manager entry was subsequently deleted, including its three stored versions, as confirmed by the operator's CLI output. Any underlying GHCR token revocation requires separate verification.
 
 ## GitOps: 5/5 Synced & Healthy
 
@@ -160,7 +160,7 @@ The bounded k6 test targeted the live GKE checkout gateway through a port-forwar
 - **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling and GKE capacity benchmarking remain future work. CI smoke and bounded load tests were run against GKE: both 60-second benchmarks passed all four thresholds. Maximum-capacity and long-duration tests remain future work.
 - **Resource safety:** Tempo's original 384Mi limit caused an actual OOM; the 1Gi remediation was deployed and verified.
 - **Security:** Loki is internal-only without authentication. Keep any port-forwards local, protect Grafana, and never commit registry or cloud credentials.
-- **Cloud lifecycle:** GKE teardown was verified on 3 November 2026 ([evidence](https://github.com/Fouad-DevOps-Projects/cloud-native-infrastructure/blob/main/docs/evidence/gke/teardown/README.md)). The separate Secret Manager entry used for GHCR authentication remained at verification time and requires independent cleanup review; account-wide zero cost is not claimed.
+- **Cloud lifecycle:** GKE teardown was verified on 3 November 2026 ([evidence](https://github.com/Fouad-DevOps-Projects/cloud-native-infrastructure/blob/main/docs/evidence/gke/teardown/README.md)). The separate Secret Manager entry used for GHCR authentication was subsequently deleted (including all three stored versions). Revocation of the underlying GitHub token and account-wide zero cost are not claimed.
 
 ## Project references
 
