@@ -9,13 +9,15 @@ performance test against the running GKE deployment.
 
 ## Test Configuration
 
+This section summarizes the **first run**. The independent repeat is reported below with its own raw results.
+
 | Parameter | Value |
 |---|---|
 | Target | GKE gateway through kubectl port-forward |
 | Endpoint | GET /checkout |
 | Duration | 60 seconds |
 | Arrival rate | 3 requests/second |
-| Maximum configured VUs | 10 |
+| Maximum configured VUs | 10 (cap; actual peak active VU was 1) |
 | Requests completed | 180 |
 | Dropped iterations | 0 |
 
@@ -46,7 +48,7 @@ performance test against the running GKE deployment.
 
 ## Grafana Evidence
 
-![GKE performance dashboard](../../docs/evidence/09-k6-baseline-dashboard.png)
+![GKE performance dashboard](../evidence/09-k6-baseline-dashboard.png)
 
 ## Raw Evidence
 

@@ -114,18 +114,24 @@ without disrupting Loki, Alloy, or the application's running Pods.
 
 ## Performance Benchmark — GKE
 
-**180 successful requests · 0% errors · 288.77 ms p95 · 3 req/s**
+**Two verified 60-second GKE benchmarks · 361 successful requests · 0 HTTP errors · 8/8 threshold checks passed.**
 
-A 60-second k6 benchmark against the live GKE checkout gateway
-passed all four acceptance thresholds.
+| Benchmark | Requests | Throughput | k6 p95 latency | Error rate |
+|---|---:|---:|---:|---:|
+| Baseline | 180 | 3.000 req/s | 288.77 ms | 0% |
+| Repeat | 181 | 3.008 req/s | 259.52 ms | 0% |
 
-[View the full benchmark report](docs/performance/k6-baseline.md)
+![Grafana checkout SLO measurements during the GKE benchmark](docs/evidence/09-k6-baseline-dashboard.png)
+
+The bounded k6 test targeted the live GKE checkout gateway through a port-forward. This is **not a maximum-capacity stress test**; the k6 latency and Grafana server-side metrics have different measurement boundaries, and Grafana throughput uses a five-minute rolling window.
+
+[View the full benchmark report, raw outputs and limitations](docs/performance/k6-baseline.md)
 
 ## Engineering decisions & limitations
 
 - **Data persistence:** Tempo and Loki use `emptyDir`; Pod replacement can erase telemetry. No production retention guarantee or HA is claimed.
 - **Alerting:** Prometheus Pending/Firing/Resolved states were verified; **external Alertmanager notification delivery was not tested**.
-- **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling and GKE capacity benchmarking remain future work. CI smoke and bounded load-test scripts are available; a GKE load-test result has not been recorded.
+- **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling and GKE capacity benchmarking remain future work. CI smoke and bounded load tests were run against GKE: both 60-second benchmarks passed all four thresholds. Maximum-capacity and long-duration tests remain future work.
 - **Resource safety:** Tempo's original 384Mi limit caused an actual OOM; the 1Gi remediation was deployed and verified.
 - **Security:** Loki is internal-only without authentication. Keep any port-forwards local, protect Grafana, and never commit registry or cloud credentials.
 - **Cloud cost:** The GKE cluster is billable until explicitly torn down; follow the infrastructure cleanup instructions when evidence collection is finished.
