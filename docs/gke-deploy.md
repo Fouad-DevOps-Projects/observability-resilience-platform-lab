@@ -43,4 +43,4 @@ See [the incident report](incidents/incident-report.md) and [screenshot gallery]
 
 ## Operational limits
 
-Tempo and Loki use `emptyDir` and lose local data upon Pod replacement. The cluster uses a single worker and is *not* production-grade high availability. No external Alertmanager notification was verified. The GKE lab was destroyed and independently verified on 3 November 2026. A separately created GCP Secret Manager secret remained outside that Terraform teardown; review it independently. A fresh deployment will incur new cloud costs.
+Tempo and Loki use `emptyDir` and lose local data upon Pod replacement. The cluster uses a single worker and is *not* production-grade high availability. No external Alertmanager notification was verified. The GKE lab was destroyed and independently verified on 3 November 2026. The separately created GCP Secret Manager secret remained immediately after Terraform teardown and was subsequently deleted with its three stored versions; verify GHCR token revocation separately. A fresh deployment will incur new cloud costs.
