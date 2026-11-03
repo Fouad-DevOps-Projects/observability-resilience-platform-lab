@@ -14,8 +14,26 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r apps/requirements-dev.txt
-      - run: python -m pytest apps/tests/ -q
-      - run: docker compose config --quiet
+      - name: Unit and resilience tests
+        run: python -m pytest apps/tests/ -q
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+      - name: Start local application for k6
+        run: |
+          set -euo pipefail
+          (cd apps && nohup python -m uvicorn downstream:app --host 127.0.0.1 --port 8001 > /tmp/sre-downstream.log 2>&1 &)
+          (cd apps && nohup env DOWNSTREAM_URL=http://127.0.0.1:8001 python -m uvicorn gateway:app --host 127.0.0.1 --port 8000 > /tmp/sre-gateway.log 2>&1 &)
+          for attempt in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/checkout >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/sre-gateway.log /tmp/sre-downstream.log
+          exit 1
+      - name: k6 checkout smoke test
+        run: |
+          docker run --rm --network host             -e TARGET_URL=http://127.0.0.1:8000             -v "${{ github.workspace }}/tests/load:/scripts:ro"             grafana/k6:1.1.0 run /scripts/smoke.js
   publish:
     needs: test
     if: github.event_name == 'push'

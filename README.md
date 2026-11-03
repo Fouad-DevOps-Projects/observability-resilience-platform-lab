@@ -97,11 +97,26 @@ without disrupting Loki, Alloy, or the application's running Pods.
 
 **Local application development:** `docker compose up -d --build`, then `curl http://localhost:8000/checkout`. The GKE observability integration relies on the existing in-cluster monitoring stack; local Compose is not a substitute for the validated GKE exercise.
 
+## Reproducible load & resilience testing
+
+**Beyond screenshots:** the repository now contains two bounded k6 profiles and automated Python fault-response checks.
+
+| Validation | Coverage |
+|---|---|
+| **CI checkout smoke** | 2 k6 VUs, 15s, HTTP 200 payload checks, p95 <500ms and failure rate <0.5% |
+| **Opt-in baseline** | 3 arrivals/s for 60s with a strict 10-VU cap and dropped-iteration threshold |
+| **Resilience regression** | HTTP 500/503, connection failure, timeout, malformed payload, recovery to 200 |
+| **Safety guardrails** | No CI mutations to GKE; baseline requires explicit opt-in and targets a lab only |
+
+[Run load and resilience checks](docs/load-resilience.md) · [k6 smoke](tests/load/smoke.js) · [k6 baseline](tests/load/baseline.js) · [Fault-response tests](apps/tests/test_resilience.py)
+
+> These tests are implemented as repeatable validation gates; live performance figures must come from a completed test run, not the configured thresholds.
+
 ## Engineering decisions & limitations
 
 - **Data persistence:** Tempo and Loki use `emptyDir`; Pod replacement can erase telemetry. No production retention guarantee or HA is claimed.
 - **Alerting:** Prometheus Pending/Firing/Resolved states were verified; **external Alertmanager notification delivery was not tested**.
-- **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling, load tests and cost/performance benchmarking remain future work.
+- **Scalability:** The lab used one GKE worker. HA, durable storage, autoscaling and GKE capacity benchmarking remain future work. CI smoke and bounded load-test scripts are available; a GKE load-test result has not been recorded.
 - **Resource safety:** Tempo's original 384Mi limit caused an actual OOM; the 1Gi remediation was deployed and verified.
 - **Security:** Loki is internal-only without authentication. Keep any port-forwards local, protect Grafana, and never commit registry or cloud credentials.
 - **Cloud cost:** The GKE cluster is billable until explicitly torn down; follow the infrastructure cleanup instructions when evidence collection is finished.
