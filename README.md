@@ -112,6 +112,15 @@ without disrupting Loki, Alloy, or the application's running Pods.
 
 > These tests are implemented as repeatable validation gates; live performance figures must come from a completed test run, not the configured thresholds.
 
+## Performance Benchmark — GKE
+
+**180 successful requests · 0% errors · 288.77 ms p95 · 3 req/s**
+
+A 60-second k6 benchmark against the live GKE checkout gateway
+passed all four acceptance thresholds.
+
+[View the full benchmark report](docs/performance/k6-baseline.md)
+
 ## Engineering decisions & limitations
 
 - **Data persistence:** Tempo and Loki use `emptyDir`; Pod replacement can erase telemetry. No production retention guarantee or HA is claimed.

@@ -1,0 +1,150 @@
+{
+    "metrics": {
+        "vus_max": {
+            "min": 5,
+            "max": 5,
+            "value": 5
+        },
+        "checks": {
+            "passes": 362,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "data_received": {
+            "count": 31494,
+            "rate": 523.4095903888065
+        },
+        "http_req_duration": {
+            "max": 441.756949,
+            "p(90)": 243.719708,
+            "p(95)": 259.521292,
+            "avg": 187.60308717127074,
+            "min": 153.971269,
+            "med": 165.70542,
+            "thresholds": {
+                "p(95)<500": false
+            }
+        },
+        "http_req_sending": {
+            "med": 0.040506,
+            "max": 0.260649,
+            "p(90)": 0.057949,
+            "p(95)": 0.073447,
+            "avg": 0.04480453038674031,
+            "min": 0.01584
+        },
+        "http_req_blocked": {
+            "max": 0.528806,
+            "p(90)": 0.009497,
+            "p(95)": 0.01095,
+            "avg": 0.020501994475138122,
+            "min": 0.00537,
+            "med": 0.006913
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_receiving": {
+            "avg": 0.6066902983425417,
+            "min": 0.08009,
+            "med": 0.112561,
+            "max": 35.563719,
+            "p(90)": 0.190237,
+            "p(95)": 1.89435
+        },
+        "data_sent": {
+            "count": 14118,
+            "rate": 234.63188534670635
+        },
+        "dropped_iterations": {
+            "rate": 0,
+            "count": 0,
+            "thresholds": {
+                "count==0": false
+            }
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 181,
+            "thresholds": {
+                "rate<0.005": false
+            },
+            "value": 0
+        },
+        "iterations": {
+            "count": 181,
+            "rate": 3.008101094188543
+        },
+        "http_reqs": {
+            "count": 181,
+            "rate": 3.008101094188543
+        },
+        "http_req_waiting": {
+            "p(90)": 243.585587,
+            "p(95)": 259.30704,
+            "avg": 186.95159234254146,
+            "min": 153.834613,
+            "med": 165.070253,
+            "max": 441.463237
+        },
+        "http_req_duration{expected_response:true}": {
+            "med": 165.70542,
+            "max": 441.756949,
+            "p(90)": 243.719708,
+            "p(95)": 259.521292,
+            "avg": 187.60308717127074,
+            "min": 153.971269
+        },
+        "http_req_connecting": {
+            "max": 0.402305,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.00933588950276243,
+            "min": 0,
+            "med": 0
+        },
+        "vus": {
+            "value": 0,
+            "min": 0,
+            "max": 1
+        },
+        "iteration_duration": {
+            "max": 442.488683,
+            "p(90)": 243.909104,
+            "p(95)": 259.803391,
+            "avg": 187.88567574033155,
+            "min": 154.156677,
+            "med": 165.965858
+        }
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "checkout status 200": {
+                    "fails": 0,
+                    "name": "checkout status 200",
+                    "path": "::checkout status 200",
+                    "id": "7018567ed90ebd69651b9a97a1905874",
+                    "passes": 181
+                },
+                "checkout JSON succeeded": {
+                    "passes": 181,
+                    "fails": 0,
+                    "name": "checkout JSON succeeded",
+                    "path": "::checkout JSON succeeded",
+                    "id": "8c8032f265290870a050ca4395435858"
+                }
+            }
+    }
+}
